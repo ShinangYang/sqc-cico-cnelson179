@@ -61,4 +61,36 @@ Use `./build.sh` to build CiCo and `./run.sh` to run it if using the command lin
 ## Expected results
 * Should display "Developer" for the user name.
 
+# Module 6: Ticket 601 – Automatically submit after last card digit
 
+## Test steps
+1. Build and run CiCo.
+2. Enter 00000000 (8 digits) into the field.
+3. Wait for the status panel to appear.
+
+## Expected results:
+* After the 8th digit is entered, the card should automatically be processed.
+* The status panel should appear without the button "Update".
+
+
+# Module 6: Ticket 601 – Boundary condition (incomplete card number)
+
+## Test steps
+1. Build and run CiCo.
+2. Enter only 0000000 (7 digits) into the field.
+
+## Expected results:
+* The program should NOT process the card.
+* The application should remain on the main panel because the full card number of 00000000 (8 digits) has not been entered (incomplete).
+
+
+# Module 6: Ticket 601 – Boundary condition (final digit triggers processing)
+
+## Test steps
+1. Build and run CiCo.
+2. Enter 0000000 (7 digits).
+3. Enter the final digit (0) to complete the card number. Should have 8 total digits now (00000000).
+
+## Expected results:
+* Immediately after the final digit is entered, the card should automatically be processed.
+* The status panel should appear without the button "Update".
