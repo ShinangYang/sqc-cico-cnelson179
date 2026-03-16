@@ -37,12 +37,24 @@ public class Main {
   private static class InputFilter extends DocumentFilter {
     private static final int MAX_LENGTH = 8;
 
+    // Module 6 Ticket 601: Automatically submit when full card number of 00000000 (8 digits) is entered.
+
     @Override
     public void insertString(FilterBypass fb, int offset, String stringToAdd, AttributeSet attr)
-        throws BadLocationException
+            throws BadLocationException
     {
       if (fb.getDocument() != null) {
-        super.insertString(fb, offset, stringToAdd, attr);
+        int newLength = fb.getDocument().getLength() + stringToAdd.length();
+        if (newLength <= MAX_LENGTH) {
+          super.insertString(fb, offset, stringToAdd, attr);
+
+          if (fb.getDocument().getLength() == MAX_LENGTH) {
+            SwingUtilities.invokeLater(Main::processCard);
+          }
+        }
+        else {
+          Toolkit.getDefaultToolkit().beep();
+        }
       }
       else {
         Toolkit.getDefaultToolkit().beep();
@@ -51,10 +63,20 @@ public class Main {
 
     @Override
     public void replace(FilterBypass fb, int offset, int lengthToDelete, String stringToAdd, AttributeSet attr)
-        throws BadLocationException
+            throws BadLocationException
     {
       if (fb.getDocument() != null) {
-        super.replace(fb, offset, lengthToDelete, stringToAdd, attr);
+        int newLength = fb.getDocument().getLength() - lengthToDelete + stringToAdd.length();
+        if (newLength <= MAX_LENGTH) {
+          super.replace(fb, offset, lengthToDelete, stringToAdd, attr);
+
+          if (fb.getDocument().getLength() == MAX_LENGTH) {
+            SwingUtilities.invokeLater(Main::processCard);
+          }
+        }
+        else {
+          Toolkit.getDefaultToolkit().beep();
+        }
       }
       else {
         Toolkit.getDefaultToolkit().beep();
@@ -149,7 +171,15 @@ public class Main {
           showError(ERROR_INSERT_FAILED);
         }
 
-        updateStateLabels(name, currentState == 1);
+        // Ticket 301 - Indicate whether the user checked in or out.
+        labelUser.setText(name);
+        if (currentState == 1) {
+          labelState.setText("checked in");
+        }
+        else {
+          labelState.setText("checked out");
+        }
+
         scheduleTransitionFrom(CARD_STATE, null);
       }
       else {
@@ -175,11 +205,11 @@ public class Main {
   private static void showError(int code) {
     // Module 2 ticket: Show human-readable error messages.
     String[] explanations = {
-        "Please inform staff an unknown error occurred.",
-        "Please inform staff that database wasn't found.",
-        "Please show your card to staff to validate.",
-        "Please inform staff that status updates failed.",
-        "Please inform staff that log updates failed."
+            "Please inform staff an unknown error occurred.",
+            "Please inform staff that database wasn't found.",
+            "Please show your card to staff to validate.",
+            "Please inform staff that status updates failed.",
+            "Please inform staff that log updates failed."
     };
 
     labelReason.setText(explanations[code]);
@@ -206,14 +236,6 @@ public class Main {
     fieldNumber.setText("");
     ((CardLayout)deck.getLayout()).show(deck, CARD_MAIN);
     fieldNumber.grabFocus();
-  }
-
-  // Display name and new status //////////////////////////////////////////////
-  // Module 3 tickets: Display user name and new status. Doesn't require a
-  // method and can be done where this is called instead.
-  private static void updateStateLabels(String name, boolean isCheckedInNow) {
-    labelUser.setText(name);
-    labelState.setText(isCheckedInNow ? "Checked IN" : "Checked OUT");
   }
 
   // Entry point //////////////////////////////////////////////////////////////
@@ -260,11 +282,9 @@ public class Main {
     fieldNumber.setForeground(Color.magenta);
     panelMain.add(fieldNumber);
 
-    JButton updateButton = new JButton("Update");
-    updateButton.setAlignmentX(JComponent.CENTER_ALIGNMENT);
-    updateButton.addActionListener(new Update());
-    updateButton.setForeground(Color.green);
-    panelMain.add(updateButton);
+    // Module 6 Ticket 601:
+    // The "Update" button was removed because the card now automatically
+    // submits when the final digit from 00000000 (8 digits total) is entered.
 
     panelMain.add(Box.createVerticalGlue());
 
@@ -283,7 +303,7 @@ public class Main {
     labelUser.setForeground(Color.yellow);
     panelStatus.add(labelUser);
 
-    labelState = new JLabel("updated", JLabel.LEADING);
+    labelState = new JLabel("state updated", JLabel.LEADING);
     labelState.setFont(fontMain);
     labelState.setAlignmentX(JComponent.CENTER_ALIGNMENT);
     labelState.setForeground(Color.magenta);
